@@ -43,6 +43,8 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+
+    lastLogin: Date,
     verificationToken: String,
     verificationTokenExpiresAt: Date,
     resetPasswordToken: String,

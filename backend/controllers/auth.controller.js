@@ -1,57 +1,98 @@
+import crypto from "crypto";
 import User from "../models/user.model.js";
 import { comparePassword, hashPassword } from "../utils/passwordHandler.js";
 import { generateTokenAndSetCookie } from "../utils/tokenHandler.js";
+import { sendEmail } from "../utils/mailHandle.js";
 
 export const signup = async ( req, res ) => {
-	const { name, email, password, role } = req.body;
+  const { name, email, password, role } = req.body;
 
-	try {
-		if( !email || !password || !name ) {
-			throw new Error("All fields are required");
-		}
+  try {
+    if( !email || !password || !name ) {
+      return res.status( 400 ).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
 
-		const userAlreadyExists = await User.findOne({ email });
+    const existingUser = await User.findOne({ email });
+    if( existingUser ) {
+      return res.status( 400 ).json({
+        success: false,
+        message: "User already exists",
+      });
+    }
 
-		if( userAlreadyExists ) {
-			return res.status( 400 ).json({ 
-                success: false, message: "User already exists" 
-            });
-		}
+    const hashedPassword = await hashPassword( password );
 
-        const userRole = role || "Patient";
-		const hashedPassword = await hashPassword( password );
-		const verificationToken = Math.floor( 100000 + Math.random() * 900000 ).toString();
+    // Generate OTP
+    const verificationToken = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
 
-		const user = new User({
-			name,
-			email,
-			password: hashedPassword,
-			role: userRole,
-			verificationToken,
-			verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-		});
+    const hashedVerificationToken = crypto
+      .createHash( "sha256" )
+      .update( verificationToken ) 
+      .digest( "hex" );
 
-		await user.save();
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: role || "Patient",
+      verificationToken: hashedVerificationToken,
+      verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
+    });
 
-		res.status( 201 ).json({
-			success: true,
-			message: "User created successfully",
-			user: {
-				...user._doc,
-				password: undefined,
-			},
-		});
-	} catch( error ) {
-        console.log("error in signup ", error);
-		res.status( 400 ).json({ success: false, message: error.message });
-	}
+    try {
+      await sendEmail(
+        email,
+        "Email Verification",
+        `Your verification code is ${verificationToken}`,
+        `<h1>Your verification code is ${verificationToken}</h1>`
+      );
+    } catch( emailError ) {
+      // Delete user if email fails
+      await User.findByIdAndDelete( user._id );
+
+      return res.status( 500 ).json({
+        success: false,
+        message: "Failed to send verification email",
+      });
+    }
+
+    res.status( 201 ).json({
+      success: true,
+      message: "User created. Verification email sent.",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+
+  } catch (error) {
+    console.error("Signup error:", error);
+
+    res.status( 500 ).json({
+      success: false,
+      message: "Something went wrong",
+    });
+  }
 };
+
 
 export const verifyEmail = async ( req, res ) => {
 	const { code } = req.body;
 	try {
+		const hashedCode = crypto
+			.createHash( "sha256" )
+			.update( code )
+			.digest( "hex" );
+
 		const user = await User.findOne({
-			verificationToken: code,
+			verificationToken: hashedCode,
 			verificationTokenExpiresAt: { $gt: Date.now() },
 		});
 
@@ -83,7 +124,7 @@ export const verifyEmail = async ( req, res ) => {
 export const login = async ( req, res ) => {
 	const { email, password } = req.body;
 	try {
-		const user = await User.findOne({ email });
+		const user = await User.findOne({ email, isVerified: true } );
 		if( !user ) {
 			return res.status( 400 ).json({ 
                 success: false, message: "Invalid credentials" 
@@ -125,7 +166,7 @@ export const logout = async ( req, res ) => {
 export const forgotPassword = async ( req, res ) => {
 	const { email } = req.body;
 	try {
-		const user = await User.findOne({ email });
+		const user = await User.findOne({ email, isVerified: true } );
 
 		if( !user ) {
 			return res.status( 400 ).json({ success: false, message: "User not found" });
@@ -136,9 +177,30 @@ export const forgotPassword = async ( req, res ) => {
 		const resetTokenExpiresAt = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
 
 		user.resetPasswordToken = resetToken;
-		user.resetPasswordExpiresAt = resetTokenExpiresAt;
+		user.resetPasswordTokenExpiresAt = resetTokenExpiresAt;
+
+		const hashedVerificationToken = crypto
+			.createHash( "sha256" )
+			.update( resetToken ) 
+			.digest( "hex" );
+
+		user.resetPasswordToken = hashedVerificationToken;
 
 		await user.save();
+
+		try {
+			await sendEmail(
+				email,
+				"Password Reset",
+				`Your password reset code is ${resetToken}`,
+				`<h1>Your password reset code is ${resetToken}</h1>`
+			);
+		} catch( emailError ) {
+			return res.status( 500 ).json({
+				success: false,
+				message: "Failed to send password reset email",
+			});
+		}
 
 		res.status( 200 ).json({ 
             success: true, message: "Password reset link sent to your email" 
@@ -150,13 +212,18 @@ export const forgotPassword = async ( req, res ) => {
 };
 
 export const resetPassword = async ( req, res ) => {
+	const { token } = req.params;
+	const { password } = req.body;
 	try {
-		const { token } = req.params;
-		const { password } = req.body;
+		const hashedToken = crypto
+			.createHash( "sha256" )
+			.update( token ) 
+			.digest( "hex" );
 
 		const user = await User.findOne({
-			resetPasswordToken: token,
-			resetPasswordExpiresAt: { $gt: Date.now() },
+			resetPasswordToken: hashedToken,
+			resetPasswordTokenExpiresAt: { $gt: Date.now() },
+			isVerified: true,
 		});
 
 		if( !user ) {
@@ -167,10 +234,8 @@ export const resetPassword = async ( req, res ) => {
 
 		user.password = hashedPassword;
 		user.resetPasswordToken = undefined;
-		user.resetPasswordExpiresAt = undefined;
+		user.resetPasswordTokenExpiresAt = undefined;
 		await user.save();
-
-		await sendResetSuccessEmail( user.email );
 
 		res.status( 200 ).json({ success: true, message: "Password reset successful" });
 	} catch( error ) {
