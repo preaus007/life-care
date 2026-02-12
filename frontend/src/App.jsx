@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import SignUpPage from "./pages/SignUpPage";
+import LoginPage from "./pages/LoginPage";
 import VerificationPage from "./pages/VerificationPage";
 
 // const ProtectedRoute = ({ children }) => {
@@ -43,6 +44,13 @@ function App() {
           path="/verify-email"
           element={
             <VerificationPage />
+          }
+          />
+        
+        <Route
+          path="/login"
+          element={
+            <LoginPage />
           }
           />
       </Routes>
