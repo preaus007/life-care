@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import SignUpPage from "./pages/SignUpPage";
+import VerificationPage from "./pages/VerificationPage";
 
 // const ProtectedRoute = ({ children }) => {
 // 	const { isAuthenticated, user } = useAuthStore();
@@ -35,6 +36,13 @@ function App() {
           path="/signup"
           element={
             <SignUpPage />
+          }
+          />
+
+        <Route
+          path="/verify-email"
+          element={
+            <VerificationPage />
           }
           />
       </Routes>
