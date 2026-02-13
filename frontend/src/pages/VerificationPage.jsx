@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-// import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../store/authStore';
 
 export default function VerificationPage() {
   const navigate = useNavigate();
-//   const { verifyCode, isLoading } = useAuthStore();
+  const { verifyEmail } = useAuthStore();
   
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -30,8 +30,7 @@ export default function VerificationPage() {
     setError('');
 
     try {
-    //   const result = await verifyCode(code);
-      const result = {success: false};
+      const result = await verifyEmail(code);
       
       if (result.success) {
         // Navigate to home page on success
@@ -55,7 +54,7 @@ export default function VerificationPage() {
     // Only allow numbers and max 6 digits
     if (/^\d*$/.test(value) && value.length <= 6) {
       setCode(value);
-      setError(''); // Clear error when user types
+      setError(''); 
     }
   };
 

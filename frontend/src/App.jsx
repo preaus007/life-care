@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
 import VerificationPage from "./pages/VerificationPage";
 
 // const ProtectedRoute = ({ children }) => {
@@ -53,6 +54,13 @@ function App() {
             <LoginPage />
           }
           />
+
+        <Route
+          path="/home"
+          element={
+            <HomePage />
+          }
+        />  
       </Routes>
 
       <Toaster position="top-right" />

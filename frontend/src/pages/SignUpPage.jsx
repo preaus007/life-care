@@ -2,24 +2,29 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import InputField from "../components/InputField";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
+import { useAuthStore } from "../store/authStore";
+import { useNavigate } from "react-router-dom";
+import { Loader } from "lucide-react";
 
 function SignUpPage() {
   const [formData, setFormData] = useState({
-    fullName: "",
+    name: "",
     email: "",
     password: "",
   });
 
   const [passwordFocus, setPasswordFocus] = useState(false);
   const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
+  const { signup, error, isLoading } = useAuthStore();
 
   const validateSignUpForm = (formData) => {
     const errors = {};
 
-    if (!formData.fullName.trim()) {
-      errors.fullName = "Full name is required";
-    } else if (formData.fullName.trim().length < 3) {
-      errors.fullName = "Full name must be at least 3 characters";
+    if (!formData.name.trim()) {
+      errors.name = "Full name is required";
+    } else if (formData.name.trim().length < 3) {
+      errors.name = "Full name must be at least 3 characters";
     }
 
     if (!formData.email.trim()) {
@@ -48,8 +53,20 @@ function SignUpPage() {
     }
 
     setErrors({});
-    console.log("Form is valid:", formData);
+    // console.log("Form is valid:", formData);
+    handleSignUp(e);
   };
+
+  const handleSignUp = async (e) => {
+		e.preventDefault();
+
+		try {
+			await signup(formData.name, formData.email, formData.password);
+			navigate("/verify-email");
+		} catch (error) {
+			console.log(error);
+		}
+	};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -61,12 +78,12 @@ function SignUpPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <InputField
             label="Full Name"
-            id="fullName"
-            value={formData.fullName}
+            id="name"
+            value={formData.name}
             onChange={(e) =>
-              setFormData({ ...formData, fullName: e.target.value })
+              setFormData({ ...formData, name: e.target.value })
             }
-            error={errors.fullName}
+            error={errors.name}
             placeholder="John Doe"
           />
 
@@ -95,6 +112,8 @@ function SignUpPage() {
             placeholder="Enter your password"
           />
 
+          {error && (<p className="mt-1 text-sm text-red-600 text-center">{error}</p>)}
+
           <PasswordStrengthMeter
             password={formData.password}
             visible={passwordFocus}
@@ -102,11 +121,12 @@ function SignUpPage() {
 
           <motion.button
             type="submit"
+            disabled={isLoading}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="w-full py-3 cursor-pointer bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg shadow-lg"
           >
-            Sign Up
+            {isLoading ? <Loader className=' animate-spin mx-auto' size={24} /> : "Sign Up"}
           </motion.button>
         </form>
       </div>
