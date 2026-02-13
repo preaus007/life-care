@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import InputField from "../components/InputField";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
 
 function LoginPage() {
   const [formData, setFormData] = useState({
-    fullName: "",
     email: "",
     password: "",
   });
 
   const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
+  const { login, error, isLoading } = useAuthStore();
 
-  const validateSignUpForm = (formData) => {
+  const validateLoginForm = (formData) => {
     const errors = {};
 
     if (!formData.email.trim()) {
@@ -32,7 +35,7 @@ function LoginPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const validation = validateSignUpForm(formData);
+    const validation = validateLoginForm(formData);
 
     if (!validation.isValid) {
       setErrors(validation.errors);
@@ -40,8 +43,22 @@ function LoginPage() {
     }
 
     setErrors({});
-    console.log("Form is valid:", formData);
+    handleLogin(e);
   };
+
+  const handleLogin = async (e) => {
+		e.preventDefault();
+		try {
+            const result = await login(formData.email, formData.password);
+            if( result.success ){
+                navigate("/home");
+            } else {
+                setErrors({ form: result.error || "Login failed" });
+            }
+		} catch (error) {
+			console.log(error);
+		}
+	};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -78,12 +95,14 @@ function LoginPage() {
 
           <motion.button
             type="submit"
+            disabled={isLoading}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="w-full py-3 cursor-pointer bg-linear-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg shadow-lg"
           >
             Log In
           </motion.button>
+          {error && (<p className="mt-1 text-sm text-red-600 text-center">{error}</p>)}  
         </form>
       </div>
     </div>

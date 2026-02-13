@@ -40,6 +40,21 @@ export const useAuthStore = create((set) => ({
             set({ error: error.response.data.message || "Error verifying email", isLoading: false });
             return { success: false, error: error.response?.data?.message || 'Invalid verification code' };
         }
+    },
+
+    login: async( email, password ) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await axios.post(`${API_URL}/auth/login`, {
+                email,
+                password
+            });
+            set({ user: response.data.user, isAuthenticated: true, error: null, isLoading: false });
+            return { success: true };
+        } catch (error) {
+            set({ error: error.response.data.message || "Error logging in", isLoading: false });
+            return { success: false, error: error.response?.data?.message || 'Error logging in' };
+        }
     }
 
 }));

@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore';
 
 export default function VerificationPage() {
   const navigate = useNavigate();
-  const { verifyEmail } = useAuthStore();
+  const { user, verifyEmail } = useAuthStore();
   
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -99,7 +99,7 @@ export default function VerificationPage() {
               We've sent a 6-digit verification code to
             </p>
             <p className="text-gray-900 font-medium text-sm mt-1">
-              your@email.com
+              {user?.email}
             </p>
           </div>
 
