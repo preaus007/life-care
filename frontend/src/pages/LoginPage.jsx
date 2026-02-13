@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import InputField from "../components/InputField";
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../store/authStore";
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import InputField from '../components/InputField';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 
 function LoginPage() {
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    email: '',
+    password: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -18,18 +18,18 @@ function LoginPage() {
     const errors = {};
 
     if (!formData.email.trim()) {
-      errors.email = "Email is required";
+      errors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = "Please enter a valid email address";
+      errors.email = 'Please enter a valid email address';
     }
 
     if (!formData.password) {
-      errors.password = "Password is required";
+      errors.password = 'Password is required';
     }
 
     return {
       isValid: Object.keys(errors).length === 0,
-      errors,
+      errors
     };
   };
 
@@ -47,64 +47,88 @@ function LoginPage() {
   };
 
   const handleLogin = async (e) => {
-		e.preventDefault();
-		try {
-            const result = await login(formData.email, formData.password);
-            if( result.success ){
-                navigate("/home");
-            } else {
-                setErrors({ form: result.error || "Login failed" });
-            }
-		} catch (error) {
-			console.log(error);
-		}
-	};
+    e.preventDefault();
+    try {
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
+        navigate('/');
+      } else {
+        setErrors({ form: result.error || 'Login failed' });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-5">
-        <h1 className="text-2xl font-bold text-center mb-4">
-          Login to continue
-        </h1>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-md w-full bg-opacity-50 backdrop-filter backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden"
+      >
+        <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-5">
+          <h1 className="text-2xl font-bold text-center mb-4">
+            Login to continue
+          </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <InputField
+              label="Email Address"
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              error={errors.email}
+              placeholder="john@example.com"
+            />
 
-          <InputField
-            label="Email Address"
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
-            error={errors.email}
-            placeholder="john@example.com"
-          />
+            <InputField
+              label="Password"
+              id="password"
+              type="password"
+              value={formData.password}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
+              error={errors.password}
+              placeholder="Enter your password"
+            />
 
-          <InputField
-            label="Password"
-            id="password"
-            type="password"
-            value={formData.password}
-            onChange={(e) =>
-              setFormData({ ...formData, password: e.target.value })
-            }
-            error={errors.password}
-            placeholder="Enter your password"
-          />
+            <Link
+              to={'/forgot-password'}
+              className="text-sm text-green-400 hover:underline flex"
+            >
+              Forgot password
+            </Link>
 
-          <motion.button
-            type="submit"
-            disabled={isLoading}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-3 cursor-pointer bg-linear-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg shadow-lg"
+            <motion.button
+              type="submit"
+              disabled={isLoading}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-3 cursor-pointer bg-linear-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg shadow-lg"
+            >
+              Log In
+            </motion.button>
+            {error && (
+              <p className="mt-1 text-sm text-red-600 text-center">{error}</p>
+            )}
+          </form>
+        </div>
+        <div className="px-8 py-4 bg-gray-900 bg-opacity-50 flex justify-center">
+          Not have an account?
+          <Link
+            to={'/signup'}
+            className="text-sm text-green-400 hover:underline flex items-center"
           >
-            Log In
-          </motion.button>
-          {error && (<p className="mt-1 text-sm text-red-600 text-center">{error}</p>)}  
-        </form>
-      </div>
+            Sign Up
+          </Link>
+        </div>
+      </motion.div>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore';
 export default function VerificationPage() {
   const navigate = useNavigate();
   const { user, verifyEmail } = useAuthStore();
-  
+
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -31,16 +31,16 @@ export default function VerificationPage() {
 
     try {
       const result = await verifyEmail(code);
-      
+
       if (result.success) {
-        // Navigate to home page on success
-        navigate('/home');
+        // Navigate to login page on success
+        navigate('/login');
       } else {
         setError(result.error || 'Invalid verification code');
         setCode('');
         setIsVerifying(false);
       }
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       setError('Verification failed. Please try again.');
       setCode('');
@@ -50,11 +50,11 @@ export default function VerificationPage() {
 
   const handleChange = (e) => {
     const value = e.target.value;
-    
+
     // Only allow numbers and max 6 digits
     if (/^\d*$/.test(value) && value.length <= 6) {
       setCode(value);
-      setError(''); 
+      setError('');
     }
   };
 
@@ -104,13 +104,16 @@ export default function VerificationPage() {
           </div>
 
           {/* Verification Code Input */}
-          <motion.div 
+          <motion.div
             className="mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2 text-center">
+            <label
+              htmlFor="code"
+              className="block text-sm font-medium text-gray-700 mb-2 text-center"
+            >
               Enter verification code
             </label>
             <input
@@ -130,16 +133,14 @@ export default function VerificationPage() {
               pattern="\d*"
               autoComplete="one-time-code"
             />
-            
+
             {/* Progress Indicator */}
             <div className="flex justify-center gap-1 mt-3">
               {[...Array(6)].map((_, index) => (
                 <div
                   key={index}
                   className={`h-1.5 w-8 rounded-full transition-all duration-200 ${
-                    index < code.length
-                      ? 'bg-blue-600'
-                      : 'bg-gray-200'
+                    index < code.length ? 'bg-blue-600' : 'bg-gray-200'
                   }`}
                 />
               ))}
